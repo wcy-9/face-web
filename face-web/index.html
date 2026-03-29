@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>人脸关键点检测</title>
+    <style>
+        body {
+            text-align: center;
+            background: #222;
+            color: white;
+            font-family: Arial;
+        }
+        .container {
+            position: relative;
+            display: inline-block;
+        }
+        video, canvas {
+            width: 640px;
+            height: 480px;
+            border-radius: 10px;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📷 摄像头实时人脸关键点</h1>
+    <div id="status">加载模型中...</div>
+
+    <div class="container">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const status = document.getElementById('status');
+        const MODEL_URL = './models/';
+
+        async function run() {
+            try {
+                status.innerText = "⌛ 加载人脸模型...";
+                await face-api.loadSsdMobilenetv1Model(MODEL_URL);
+                await face-api.loadFaceLandmarkModel(MODEL_URL);
+
+                status.innerText = "✅ 加载成功！已打开摄像头";
+                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                video.srcObject = stream;
+            } catch (e) {
+                status.innerText = "❌ 错误：" + e.message;
+            }
+        }
+
+        video.addEventListener('play', () => {
+            face-api.matchDimensions(canvas, video);
+            setInterval(async () => {
+                const res = await face-api.detectSingleFace(video).withFaceLandmarks();
+                if (res) {
+                    face-api.draw.drawDetections(canvas, res);
+                    face-api.draw.drawFaceLandmarks(canvas, res);
+                }
+            }, 40);
+        });
+
+        run();
+    </script>
+</body>
+</html>
